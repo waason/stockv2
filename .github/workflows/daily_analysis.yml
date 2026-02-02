@@ -16,10 +16,10 @@ jobs:
 
     steps:
     - name: 檢出代碼
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: 設定 Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -35,7 +35,7 @@ jobs:
         python github_run.py --stock_id $STOCK_ID
 
     - name: 上傳分析報告
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: stock-reports
         path: reports/

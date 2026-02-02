@@ -40,8 +40,17 @@ if st.sidebar.button("開始分析"):
 
             # 1. 綜合圖表
             st.subheader("📊 統一分析看板")
-            fig = create_unified_chart(price_data, result['analysis'])
-            st.plotly_chart(fig, use_container_運算屬性=True, use_container_width=True)
+            
+            # 讓用戶選擇要顯示在圖表上的分析師
+            analyst_names = [a['analyst'] for a in result['analysis']]
+            selected_analysts = st.sidebar.multiselect(
+                "選擇圖表標記分析師",
+                options=analyst_names,
+                default=analyst_names
+            )
+            
+            fig = create_unified_chart(price_data, result['analysis'], visible_analysts=selected_analysts)
+            st.plotly_chart(fig, use_container_width=True)
 
             st.markdown("---")
 
@@ -49,19 +58,23 @@ if st.sidebar.button("開始分析"):
             st.subheader("👨‍🏫 分析師專業觀點")
             
             # 使用 Tabs 顯示不同分析師
-            analyst_names = [a['analyst'] for a in result['analysis']]
             tabs = st.tabs(analyst_names)
             
             for i, tab in enumerate(tabs):
                 a_result = result['analysis'][i]
                 with tab:
-                    st.write(f"### {a_result['analyst']} 的建議：**{a_result['prediction']}**")
+                    # 根據預測決定顏色
+                    pred_color = "red" if a_result['prediction'] == "看多" else ("green" if a_result['prediction'] == "看空" else "white")
+                    st.markdown(f"### {a_result['analyst']} 的建議：:{pred_color}[**{a_result['prediction']}**]")
                     st.write(f"**綜合評分：** {a_result['score']}")
                     st.info(a_result['explanation'])
                     
                     # 顯示具體指標
                     st.write("**核心指標：**")
-                    st.json(a_result['indicators'])
+                    cols = st.columns(len(a_result['indicators']))
+                    for idx, (k, v) in enumerate(a_result['indicators'].items()):
+                        with cols[idx]:
+                            st.metric(k, f"{v:.2f}" if isinstance(v, float) else v)
 
             st.markdown("---")
 

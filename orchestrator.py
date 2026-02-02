@@ -6,6 +6,7 @@ from analysts.lin_chi import LynchAnalyst
 from analysts.buffett import BuffettAnalyst
 from analysts.xu_xiaoping import XuXiaopingAnalyst
 from analysts.zhang_tianhao import ZhangTianhaoAnalyst
+from analysts.institutional import InstitutionalAnalyst
 from prediction.prediction_engine import PredictionEngine
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +21,8 @@ class StockAnalysisOrchestrator:
             LynchAnalyst(),
             BuffettAnalyst(),
             XuXiaopingAnalyst(),
-            ZhangTianhaoAnalyst()
+            ZhangTianhaoAnalyst(),
+            InstitutionalAnalyst()
         ]
 
     def run_full_analysis(self, stock_id):
@@ -38,7 +40,10 @@ class StockAnalysisOrchestrator:
         analysis_results = []
         for analyst in self.analysts:
             try:
-                result = analyst.analyze(price_data)
+                if isinstance(analyst, InstitutionalAnalyst):
+                    result = analyst.analyze(price_data, institutional_data=inst_data)
+                else:
+                    result = analyst.analyze(price_data)
                 analysis_results.append(result)
             except Exception as e:
                 logger.error(f"分析師 {analyst.name} 執行出錯: {e}")
