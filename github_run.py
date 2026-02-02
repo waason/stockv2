@@ -275,64 +275,210 @@ def generate_html_report(stock_id, result, charts):
     
     return html
 
+def generate_summary_report(all_results):
+    """
+    Generate a summary report comparing multiple stocks.
+    """
+    html = f"""
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多股票分析匯總報告</title>
+    <style>
+        body {{
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }}
+        table {{
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        th {{
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }}
+        td {{
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }}
+        tr:hover {{
+            background: #f9f9f9;
+        }}
+        .bullish {{ color: #4caf50; font-weight: bold; }}
+        .bearish {{ color: #f44336; font-weight: bold; }}
+        .neutral {{ color: #ff9800; font-weight: bold; }}
+        .stock-link {{
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }}
+        .stock-link:hover {{
+            text-decoration: underline;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 多股票分析匯總報告</h1>
+        <p>分析股票數量: {len(all_results)} | 生成時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>股票代號</th>
+                <th>目前價格</th>
+                <th>綜合預測</th>
+                <th>平均評分</th>
+                <th>看多分析師</th>
+                <th>看空分析師</th>
+                <th>詳細報告</th>
+            </tr>
+        </thead>
+        <tbody>
+"""
+    
+    for item in all_results:
+        stock_id = item['stock_id']
+        result = item['result']
+        
+        # 計算統計
+        bullish_count = sum(1 for a in result['analysis'] if a['prediction'] == '看多')
+        bearish_count = sum(1 for a in result['analysis'] if a['prediction'] == '看空')
+        avg_score = sum(a['score'] for a in result['analysis']) / len(result['analysis'])
+        
+        prediction_class = 'bullish' if result['prediction']['final_trend'] == '看多' else (
+            'bearish' if result['prediction']['final_trend'] == '看空' else 'neutral')
+        
+        html += f"""
+            <tr>
+                <td><strong>{stock_id}</strong></td>
+                <td>${result['current_price']:.2f}</td>
+                <td class="{prediction_class}">{result['prediction']['final_trend']}</td>
+                <td>{avg_score:.1f}</td>
+                <td>{bullish_count} 位</td>
+                <td>{bearish_count} 位</td>
+                <td><a href="report_{stock_id}.html" class="stock-link">查看詳情 →</a></td>
+            </tr>
+"""
+    
+    html += """
+        </tbody>
+    </table>
+</body>
+</html>
+"""
+    
+    return html
+
 def main():
     parser = argparse.ArgumentParser(description="GitHub 股票自動分析工具")
-    parser.add_argument("--stock_id", type=str, default="2330", help="股票代號")
+    parser.add_argument("--stock_id", type=str, default="2330", 
+                       help="股票代號，多個股票用逗號分隔 (例如: 2330,2317,2454)")
     args = parser.parse_args()
 
+    # 解析股票代號（支援多個）
+    stock_ids = [s.strip() for s in args.stock_id.split(',')]
+    
     # 初始化協調器
     orchestrator = StockAnalysisOrchestrator()
     
-    # 執行全分析
-    print(f"--- 開始處理股票: {args.stock_id} ---")
-    result = orchestrator.run_full_analysis(args.stock_id)
+    # 批次分析所有股票
+    all_results = []
+    for stock_id in stock_ids:
+        print(f"\n{'='*60}")
+        print(f"開始處理股票: {stock_id}")
+        print(f"{'='*60}")
+        
+        result = orchestrator.run_full_analysis(stock_id)
+        
+        if "error" in result:
+            print(f"❌ 錯誤: {result['error']}")
+            continue
+        
+        all_results.append({
+            'stock_id': stock_id,
+            'result': result
+        })
     
-    if "error" in result:
-        print(f"錯誤: {result['error']}")
-        return
-
     # 創建報告目錄
     if not os.path.exists("reports"):
         os.makedirs("reports")
     
-    # 獲取數據用於圖表生成
-    price_data = orchestrator.data_manager.get_stock_data(args.stock_id)
-    inst_data = orchestrator.data_manager.get_institutional_data(args.stock_id)
-    
-    # 生成圖表
-    print("正在生成圖表...")
-    charts = generate_charts(args.stock_id, price_data, result['analysis'], inst_data)
-    
-    # 生成 HTML 報告
-    print("正在生成 HTML 報告...")
-    html_content = generate_html_report(args.stock_id, result, charts)
-    with open(f"reports/report_{args.stock_id}.html", "w", encoding="utf-8") as f:
-        f.write(html_content)
-    
-    # 生成簡易 Markdown 報告（保留向後兼容）
-    report_content = f"""
-# 股票分析報告: {args.stock_id}
+    # 處理每個股票
+    for item in all_results:
+        stock_id = item['stock_id']
+        result = item['result']
+        
+        # 獲取數據用於圖表生成
+        price_data = orchestrator.data_manager.get_stock_data(stock_id)
+        inst_data = orchestrator.data_manager.get_institutional_data(stock_id)
+        
+        # 生成圖表
+        print(f"📊 正在生成 {stock_id} 圖表...")
+        charts = generate_charts(stock_id, price_data, result['analysis'], inst_data)
+        
+        # 生成 HTML 報告
+        print(f"📝 正在生成 {stock_id} HTML 報告...")
+        html_content = generate_html_report(stock_id, result, charts)
+        with open(f"reports/report_{stock_id}.html", "w", encoding="utf-8") as f:
+            f.write(html_content)
+        
+        # 生成簡易 Markdown 報告
+        report_content = f"""
+# 股票分析報告: {stock_id}
 - 目前價格: {result['current_price']}
 - 綜合預測: {result['prediction']['final_trend']}
 - 新聞摘要: {result['news_summary']}
 
 ## 分析師觀點:
 """
-    for a in result['analysis']:
-        report_content += f"- **{a['analyst']}**: {a['prediction']} (評分: {a['score']})\n  - {a['explanation']}\n"
+        for a in result['analysis']:
+            report_content += f"- **{a['analyst']}**: {a['prediction']} (評分: {a['score']})\n  - {a['explanation']}\n"
+        
+        with open(f"reports/report_{stock_id}.md", "w", encoding="utf-8") as f:
+            f.write(report_content)
+        
+        # 保存 JSON 數據
+        result_serializable = convert_numpy_types(result)
+        with open(f"reports/result_{stock_id}.json", "w", encoding="utf-8") as f:
+            json.dump(result_serializable, f, ensure_ascii=False, indent=4)
+        
+        print(f"✅ {stock_id} 完成！")
     
-    with open(f"reports/report_{args.stock_id}.md", "w", encoding="utf-8") as f:
-        f.write(report_content)
-    
-    # 保存 JSON 數據
-    result_serializable = convert_numpy_types(result)
-    with open(f"reports/result_{args.stock_id}.json", "w", encoding="utf-8") as f:
-        json.dump(result_serializable, f, ensure_ascii=False, indent=4)
+    # 如果分析了多個股票，生成匯總報告
+    if len(all_results) > 1:
+        print(f"\n📊 正在生成匯總報告...")
+        summary_html = generate_summary_report(all_results)
+        with open(f"reports/summary.html", "w", encoding="utf-8") as f:
+            f.write(summary_html)
+        print(f"✅ 匯總報告已生成")
 
-    print(f"--- 分析完成！---")
-    print(f"✅ HTML 報告: reports/report_{args.stock_id}.html")
-    print(f"✅ 圖表: {len(charts)} 個")
-    print(f"✅ JSON 數據: reports/result_{args.stock_id}.json")
+    print(f"\n{'='*60}")
+    print(f"🎉 分析完成！")
+    print(f"{'='*60}")
+    print(f"✅ 已分析股票: {', '.join([item['stock_id'] for item in all_results])}")
+    print(f"✅ 報告位置: reports/")
+    if len(all_results) > 1:
+        print(f"✅ 匯總報告: reports/summary.html")
 
 if __name__ == "__main__":
     main()
