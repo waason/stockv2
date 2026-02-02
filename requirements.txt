@@ -1,0 +1,16 @@
+finmind
+yfinance
+pandas
+numpy
+matplotlib
+plotly
+streamlit
+sqlalchemy
+pyyaml
+tensorflow
+xgboost
+scikit-learn
+fpdf
+openpyxl
+requests
+pytest

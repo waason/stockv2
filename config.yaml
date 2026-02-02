@@ -1,0 +1,24 @@
+api:
+  finmind_token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRlIjoiMjAyNi0wMi0wMiAxOToyNDozNiIsInVzZXJfaWQiOiJ3YWFzb24iLCJlbWFpbCI6IndhYXNvbmpvaG5AZ21haWwuY29tIiwiaXAiOiIxMTQuNDYuMTY5LjI1MSJ9.K-gDeSYlOJXEcuB40BonYEPTZ73pP_yRYqdD08S37y4"
+  update_interval: 10 # 秒
+
+database:
+  type: "sqlite"
+  path: "stock_data.db"
+
+analysts:
+  chen_mingxian:
+    weight: 0.2
+  lin_chi:
+    weight: 0.2
+  buffett:
+    weight: 0.2
+  xu_xiaoping:
+    weight: 0.2
+  zhang_tianhao:
+    weight: 0.2
+
+prediction:
+  short_term: 5 # days
+  medium_term: 20 # days
+  long_term: 252 # days
