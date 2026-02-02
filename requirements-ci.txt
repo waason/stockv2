@@ -1,0 +1,9 @@
+finmind
+yfinance
+pandas
+numpy
+pyyaml
+requests
+tqdm
+matplotlib
+pillow
