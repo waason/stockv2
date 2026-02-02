@@ -1,0 +1,7 @@
+# 此資料夾用於存放自動生成的股票分析報告
+# 報告會由 GitHub Actions 自動更新
+*.html
+*.png
+*.json
+*.md
+!README.md

@@ -30,11 +30,19 @@ jobs:
 
     - name: 執行股票分析
       run: |
-        # 如果是手動觸發則使用輸入值，否則預設分析 2330
-        STOCK_ID="${{ github.event.inputs.stock_id || '2330' }}"
-        python github_run.py --stock_id $STOCK_ID
+        python github_run.py --stock_id "${{ github.event.inputs.stock_id || '2330' }}"
 
-    - name: 上傳分析報告
+    - name: 提交報告到倉庫
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add reports/
+        git diff --staged --quiet || git commit -m "📊 Update stock analysis reports - $(date +'%Y-%m-%d %H:%M:%S')"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 上傳報告為 Artifact (備份)
       uses: actions/upload-artifact@v4
       with:
         name: stock-reports
