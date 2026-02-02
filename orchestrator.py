@@ -2,7 +2,7 @@ import logging
 import yaml
 from data_layer.data_manager import DataManager
 from analysts.chen_mingxian import ChenMingxianAnalyst
-from analysts.lin_chi import LynchAnalyst
+from analysts.lin_chi import LinChiAnalyst
 from analysts.buffett import BuffettAnalyst
 from analysts.xu_xiaoping import XuXiaopingAnalyst
 from analysts.zhang_tianhao import ZhangTianhaoAnalyst
@@ -18,10 +18,9 @@ class StockAnalysisOrchestrator:
         self.prediction_engine = PredictionEngine()
         self.analysts = [
             ChenMingxianAnalyst(),
-            LynchAnalyst(),
             BuffettAnalyst(),
-            XuXiaopingAnalyst(),
             ZhangTianhaoAnalyst(),
+            LinChiAnalyst(),
             InstitutionalAnalyst()
         ]
 
