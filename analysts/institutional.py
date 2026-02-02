@@ -25,10 +25,10 @@ class InstitutionalAnalyst(BaseAnalyst):
         # 取得最近 5 個交易日
         recent_5 = df.tail(5)
         
-        # 計算外資與投信的買賣超總和
-        foreign_buy = recent_5['Foreign_Investor'].sum()
-        it_buy = recent_5['Investment_Trust'].sum()
-        dealer_buy = recent_5['Dealer'].sum()
+        # 計算外資與投信的買賣超總和 (use .get() for safe access)
+        foreign_buy = recent_5.get('Foreign_Investor', pd.Series([0])).fillna(0).sum()
+        it_buy = recent_5.get('Investment_Trust', pd.Series([0])).fillna(0).sum()
+        dealer_buy = recent_5.get('Dealer', pd.Series([0])).fillna(0).sum()
         
         total_buy = foreign_buy + it_buy + dealer_buy
         
