@@ -1,0 +1,41 @@
+name: Daily Stock Analysis
+
+on:
+  schedule:
+    - cron: '0 9 * * 1-5' # 台北時間週一到週五下午 5:00 (UTC 9:00)
+  workflow_dispatch:
+    inputs:
+      stock_id:
+        description: '輸入要分析的股票代號'
+        required: true
+        default: '2330'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 檢出代碼
+      uses: actions/checkout@v3
+
+    - name: 設定 Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: 安裝依賴
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: 執行股票分析
+      run: |
+        # 如果是手動觸發則使用輸入值，否則預設分析 2330
+        STOCK_ID="${{ github.event.inputs.stock_id || '2330' }}"
+        python github_run.py --stock_id $STOCK_ID
+
+    - name: 上傳分析報告
+      uses: actions/upload-artifact@v3
+      with:
+        name: stock-reports
+        path: reports/
