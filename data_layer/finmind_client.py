@@ -8,7 +8,7 @@ class FinMindClient:
     def __init__(self, token=None):
         self.loader = DataLoader()
         if token:
-            self.loader.login_token(token)
+            self.loader.login_by_token(token)
             
     def get_stock_price(self, stock_id, start_date, end_date):
         """
